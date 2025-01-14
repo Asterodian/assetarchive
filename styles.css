@@ -1,8 +1,11 @@
+/* Default light theme */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
     background-color: #f4f4f4;
+    color: black;
+    transition: all 0.3s ease;
 }
 
 header {
@@ -105,4 +108,34 @@ form button {
     color: white;
     border: none;
     cursor: pointer;
+}
+
+.dark-theme {
+    background-color: #181818;
+    color: white;
+}
+
+.dark-theme header {
+    background-color: #444;
+}
+
+.dark-theme .asset-card {
+    background-color: #333;
+    color: white;
+}
+
+.dark-theme #search-button {
+    background-color: #444;
+}
+
+.dark-theme button {
+    background-color: #555;
+}
+
+.dark-theme a {
+    background-color: #007BFF;
+}
+
+.dark-theme #model-viewer {
+    background-color: #333;
 }
