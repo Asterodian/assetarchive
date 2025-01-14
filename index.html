@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Asset Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/loaders/GLTFLoader.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Game Asset Manager</h1>
+        <p>Search and preview assets and textures by game name</p>
+    </header>
+
+    <main>
+        <section id="search-section">
+            <input type="text" id="game-search" placeholder="Enter game name">
+            <button id="search-button">Search</button>
+        </section>
+
+        <section id="asset-list">
+            <!-- Dynamic asset list will be appended here -->
+        </section>
+
+        <section id="preview-section">
+            <h2>3D Model Preview</h2>
+            <div id="model-viewer"></div>
+            <input type="file" id="thumbnail-uploader" accept="image/*">
+            <p id="thumbnail-info">Upload a new thumbnail for the asset.</p>
+        </section>
+
+        <!-- Add Asset Form -->
+        <section id="add-asset-section">
+            <h2>Add New Asset</h2>
+            <form id="add-asset-form">
+                <input type="text" id="asset-name" placeholder="Asset Name" required>
+                <input type="text" id="game-name" placeholder="Game Name" required>
+                <input type="file" id="asset-model" accept=".glb, .gltf" required>
+                <input type="file" id="asset-thumbnail" accept="image/*" required>
+                <button type="submit">Add Asset</button>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        const assets = [
+            { name: "Fantasy Sword", game: "Adventure Quest", thumbnail: "thumbnail/sword.jpg", model: "objects/sword.glb" },
+            { name: "Sci-Fi Ship", game: "Galaxy Wars", thumbnail: "thumbnail/ship.jpg", model: "objects/ship.glb" },
+            { name: "Medieval Shield", game: "Knights Glory", thumbnail: "thumbnail/shield.jpg", model: "objects/shield.glb" }
+        ];
+
+        const searchButton = document.getElementById('search-button');
+        const searchInput = document.getElementById('game-search');
+        const assetList = document.getElementById('asset-list');
+        const modelViewer = document.getElementById('model-viewer');
+        const thumbnailUploader = document.getElementById('thumbnail-uploader');
+        const addAssetForm = document.getElementById('add-asset-form');
+        const assetNameInput = document.getElementById('asset-name');
+        const gameNameInput = document.getElementById('game-name');
+        const assetModelInput = document.getElementById('asset-model');
+        const assetThumbnailInput = document.getElementById('asset-thumbnail');
+        
+        // Function to render asset list based on game name
+        function renderAssetList(gameName) {
+            assetList.innerHTML = '';
+            const filteredAssets = assets.filter(asset => asset.game.toLowerCase().includes(gameName.toLowerCase()));
+
+            if (filteredAssets.length === 0) {
+                assetList.innerHTML = '<p>No assets found for this game.</p>';
+                return;
+            }
+
+            filteredAssets.forEach(asset => {
+                const assetCard = document.createElement('div');
+                assetCard.classList.add('asset-card');
+
+                assetCard.innerHTML = `
+                    <img src="${asset.thumbnail}" alt="${asset.name} Thumbnail" class="asset-thumbnail">
+                    <h3>${asset.name}</h3>
+                    <button onclick="previewModel('${asset.model}')">Preview</button>
+                    <a href="${asset.model}" download>Download 3D Model</a>
+                `;
+
+                assetList.appendChild(assetCard);
+            });
+        }
+
+        // Function to load 3D model in the preview
+        function previewModel(modelPath) {
+            modelViewer.innerHTML = ''; // Clear previous model
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, modelViewer.clientWidth / modelViewer.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(modelViewer.clientWidth, modelViewer.clientHeight);
+            modelViewer.appendChild(renderer.domElement);
+
+            const light = new THREE.PointLight(0xffffff, 1, 100);
+            light.position.set(10, 10, 10);
+            scene.add(light);
+
+            const loader = new THREE.GLTFLoader();
+            loader.load(modelPath, gltf => {
+                scene.add(gltf.scene);
+                camera.position.z = 5;
+                function animate() {
+                    requestAnimationFrame(animate);
+                    gltf.scene.rotation.y += 0.01;
+                    renderer.render(scene, camera);
+                }
+                animate();
+            });
+        }
+
+        // Handle thumbnail upload
+        thumbnailUploader.addEventListener('change', event => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const activeThumbnail = document.querySelector('.asset-card img');
+                    if (activeThumbnail) {
+                        activeThumbnail.src = e.target.result;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Add search functionality
+        searchButton.addEventListener('click', () => {
+            const gameName = searchInput.value;
+            renderAssetList(gameName);
+        });
+
+        // Handle adding a new asset
+        addAssetForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const assetName = assetNameInput.value;
+            const gameName = gameNameInput.value;
+            const assetModelFile = assetModelInput.files[0];
+            const assetThumbnailFile = assetThumbnailInput.files[0];
+
+            if (!assetModelFile || !assetThumbnailFile) {
+                alert('Please upload both a 3D model and a thumbnail.');
+                return;
+            }
+
+            const modelPath = `objects/${assetModelFile.name}`;
+            const thumbnailPath = `thumbnail/${assetThumbnailFile.name}`;
+
+            // Save files (note: this requires server-side handling in a real application)
+            const reader = new FileReader();
+
+            // Thumbnail file handling (for demonstration purposes, assuming files are uploaded to the correct server directories)
+            reader.onload = () => {
+                // Mock file saving logic here
+                assets.push({
+                    name: assetName,
+                    game: gameName,
+                    thumbnail: thumbnailPath,
+                    model: modelPath
+                });
+
+                alert('Asset added successfully!');
+                renderAssetList('');
+            };
+            reader.readAsDataURL(assetThumbnailFile);
+
+            // Mock model file saving (would require server-side handling for file storage)
+            const modelReader = new FileReader();
+            modelReader.onload = () => {
+                // Handle model file saving on the server
+            };
+            modelReader.readAsDataURL(assetModelFile);
+        });
+
+        // Initial render
+        renderAssetList('');
+    </script>
+</body>
+</html>
