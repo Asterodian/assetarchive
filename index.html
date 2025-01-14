@@ -38,7 +38,7 @@
             <form id="add-asset-form" style="display:none;">
                 <input type="text" id="asset-name" placeholder="Asset Name" required>
                 <input type="text" id="game-name" placeholder="Game Name" required>
-                <input type="file" id="asset-model" accept=".glb, .gltf" required>
+                <input type="file" id="asset-model" accept=".glb, .fbx, .obj" required>
                 <input type="file" id="asset-thumbnail" accept="image/*" required>
                 <button type="submit">Add Asset</button>
             </form>
@@ -71,7 +71,7 @@
                 return;
             }
 
-            filteredAssets.forEach(asset => {
+            filteredAssets.forEach((asset, index) => {
                 const assetCard = document.createElement('div');
                 assetCard.classList.add('asset-card');
 
@@ -79,7 +79,8 @@
                     <img src="${asset.thumbnail}" alt="${asset.name} Thumbnail" class="asset-thumbnail">
                     <h3>${asset.name}</h3>
                     <button onclick="previewModel('${asset.model}')">Preview</button>
-                    <a href="${asset.model}" download>Download 3D Model</a>
+                    <button onclick="downloadAsset(${index})">Download</button>
+                    <button onclick="deleteAsset(${index})">Delete</button>
                 `;
 
                 assetList.appendChild(assetCard);
@@ -192,8 +193,45 @@
             toggleThemeButton.textContent = document.body.classList.contains('dark-theme') ? 'Switch to Light Mode' : 'Switch to Dark Mode';
         });
 
+        // Function to download an asset (model + texture as a folder)
+        function downloadAsset(index) {
+            const asset = assets[index];
+            const zip = new JSZip();
+
+            // Add the model and texture to the zip file
+            zip.file(asset.model, fetchFile(asset.model));
+            zip.file(asset.thumbnail, fetchFile(asset.thumbnail));
+
+            zip.generateAsync({ type: 'blob' })
+                .then(function(content) {
+                    saveAs(content, `${asset.name}.zip`);
+                });
+        }
+
+        // Helper function to fetch file data (simulating file download logic)
+        function fetchFile(filePath) {
+            return new Promise((resolve, reject) => {
+                fetch(filePath)
+                    .then(response => response.blob())
+                    .then(blob => resolve(blob))
+                    .catch(err => reject(err));
+            });
+        }
+
+        // Function to delete an asset
+        function deleteAsset(index) {
+            if (confirm('Are you sure you want to delete this asset?')) {
+                assets.splice(index, 1);
+                localStorage.setItem('assets', JSON.stringify(assets));
+                renderAssetList('');
+            }
+        }
+
         // Initial render
         renderAssetList('');
     </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </body>
 </html>
